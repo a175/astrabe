@@ -9,7 +9,7 @@
         <attribute name="action">app.new</attribute>
       </item>
       <item>
-        <attribute name="label" translatable="yes">_Open</attribute>
+        <attribute name="label" translatable="yes">_Open as New project</attribute>
         <attribute name="action">app.open</attribute>
       </item>
     </section>
