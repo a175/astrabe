@@ -2,7 +2,7 @@
 import sys
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk,Gio,GLib
+from gi.repository import Gtk,GdkPixbuf,Gio,GLib
 gi.require_version("Gst", "1.0")
 gi.require_version("GstVideo", "1.0")
 from gi.repository import Gst,GstVideo
@@ -597,7 +597,8 @@ class AstrabeApp(Gtk.Application):
 
         self.APP_NAME="Astrabe"
         self.APP_VERSION="0.0.0"
-        self.APP_HELP_URL="https://github.com/a175/astrabe"
+        self.APP_URL="https://github.com/a175/astrabe"
+        self.APP_LOGO=GdkPixbuf.Pixbuf.new_from_file("./icon.png")
         self.MENUBAR_XML_FILENAME = "./ui.xml"
 
     def do_startup(self):
@@ -673,12 +674,14 @@ class AstrabeApp(Gtk.Application):
         about_dialog = Gtk.AboutDialog()
         about_dialog.set_program_name(self.APP_NAME)
         about_dialog.set_version(self.APP_VERSION)
+        about_dialog.set_website(self.APP_URL)
+        about_dialog.set_logo(self.APP_LOGO)
         about_dialog.present()
 
     def on_help(self, action, param):
         help_dialog = Gtk.MessageDialog(flags=0,buttons=Gtk.ButtonsType.OK,text="Help")
         help_dialog.format_secondary_text("See the following for help")
-        link=Gtk.LinkButton.new_with_label(self.APP_HELP_URL,"link to web page")
+        link=Gtk.LinkButton.new_with_label(self.APP_URL,"link to web page")
         link.show()
         contentarea=help_dialog.get_content_area()
         contentarea.add(link)
