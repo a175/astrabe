@@ -598,7 +598,7 @@ class AstrabeApp(Gtk.Application):
         self.APP_NAME="Astrabe"
         self.APP_VERSION="0.0.0"
         self.APP_URL="https://github.com/a175/astrabe"
-        self.APP_LOGO=GdkPixbuf.Pixbuf.new_from_file("./icon.png")
+        self.APP_LOGO_FILE="./icon.png"
         self.MENUBAR_XML_FILENAME = "./ui.xml"
 
     def do_startup(self):
@@ -675,7 +675,8 @@ class AstrabeApp(Gtk.Application):
         about_dialog.set_program_name(self.APP_NAME)
         about_dialog.set_version(self.APP_VERSION)
         about_dialog.set_website(self.APP_URL)
-        about_dialog.set_logo(self.APP_LOGO)
+        pixbuf=GdkPixbuf.Pixbuf.new_from_file(self.APP_LOGO_FILE)
+        about_dialog.set_logo(pixbuf)
         about_dialog.present()
 
     def on_help(self, action, param):
