@@ -20,6 +20,17 @@ class RegularlyUpdatable:
         if not hasattr(self,"timerid"):
             self.timer_num_steps=0
         
+    def set_video_stuff(self, video_stuff):
+        self.video_stuff=video_stuff
+        self.video_stuff.handlers_on_state_changed__bus.append(self.on_state_changed__bus)
+
+    def on_state_changed__bus(self,buf,msg):
+        (old,new,pending) = msg.parse_state_changed()
+        if new == Gst.State.PLAYING:
+            self.set_regular_update(-1)
+        else:
+            self.set_regular_update(10)
+
     def set_regular_update(self,lim_num):
         self.timer_num_steps=lim_num
         if lim_num==0:
@@ -42,12 +53,14 @@ class RegularlyUpdatable:
     def regular_update_step(self):
         pass
 
+
 class TrackCursorArea(Gtk.DrawingArea):
     def __init__(self):
         super().__init__()
-        self.current_time=10
+        self.current_time=0
         self.connect("draw", self.on_draw__area)
-        
+        self.unit=10/Gst.SECOND
+
     def set_current_time(self,time):
         self.current_time=time
         self.queue_draw()
@@ -55,10 +68,11 @@ class TrackCursorArea(Gtk.DrawingArea):
     def on_draw__area(self, widget, cr):
         allocation = widget.get_allocation()
         y=allocation.height
+        x=self.unit*self.current_time
         (r,g,b,a)=universalcolordesign.CUD_V4.B1A
         cr.set_source_rgba(r,g,b,a)
-        cr.move_to(self.current_time,0)
-        cr.line_to(self.current_time,y)
+        cr.move_to(x,0)
+        cr.line_to(x,y)
         cr.stroke()
         return True
 
@@ -68,15 +82,12 @@ class RulerTrack(Gtk.DrawingArea):
         self.set_size_request(-1,10)
         self.connect("draw", self.on_draw__area)
 
+        self.n=0
         
-    def set_current_time(self,time):
-        self.current_time=time
-        self.queue_draw()
-    
     def on_draw__area(self, widget, cr):
         allocation = widget.get_allocation()
         y=allocation.height
-        (r,g,b)=universalcolordesign.CUD_V4.A1
+        (r,g,b)=universalcolordesign.CUD_V4.G3
         cr.set_source_rgba(r,g,b)
         n=1000
         for i in range(n):
@@ -93,7 +104,7 @@ class RulerTrack(Gtk.DrawingArea):
             cr.stroke()
         return True
 
-class TrackArea(Gtk.ScrolledWindow):
+class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
     def __init__(self):
         super().__init__()
         #scw.set_policy(Gtk.PolicyType.AUTOMATIC,Gtk.PolicyType.NEVER)
@@ -107,7 +118,16 @@ class TrackArea(Gtk.ScrolledWindow):
         overlay.add(self.box)
 
         self.add_track(RulerTrack())
+        
+        self.video_stuff=None
+        self.init_timerid_and_interval(10)
 
+    def regular_update_step(self):
+        current=self.video_stuff.query_position(Gst.Format.TIME)
+        if current < 0:
+            return True
+        self.cursorarea.set_current_time(current)
+        return True
 
 
     def add_track(self,area):
@@ -123,16 +143,6 @@ class VideoPositionScale(Gtk.Scale,RegularlyUpdatable):
         self.video_stuff=None
         self.init_timerid_and_interval(10)
         
-    def set_video_stuff(self, video_stuff):
-        self.video_stuff=video_stuff
-        self.video_stuff.handlers_on_state_changed__bus.append(self.on_state_changed__bus)
-
-    def on_state_changed__bus(self,buf,msg):
-        (old,new,pending) = msg.parse_state_changed()
-        if new == Gst.State.PLAYING:
-            self.set_regular_update(-1)
-        else:
-            self.set_regular_update(10)
 
     def regular_update_step(self):
         if self.video_stuff.duration ==  Gst.CLOCK_TIME_NONE:
@@ -611,6 +621,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         track_area=TrackArea()
         video_block.pack_start(track_area,False,True,0)
+        track_area.set_video_stuff(self.video_stuff)
         
         video_controller_box=Gtk.Box()
         video_controller_box.set_orientation(Gtk.Orientation.HORIZONTAL)
