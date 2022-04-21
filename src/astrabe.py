@@ -10,6 +10,8 @@ from gi.repository import Gst,GstVideo
 import enum
 import cairo
 
+import universalcolordesign
+
 class RegularlyUpdatable:
     def init_timerid_and_interval(self,interval):
         self.update_interval=interval
@@ -53,7 +55,8 @@ class TrackCursorArea(Gtk.DrawingArea):
     def on_draw__area(self, widget, cr):
         allocation = widget.get_allocation()
         y=allocation.height
-        cr.set_source_rgba(1, 0, 0, 0.5)
+        (r,g,b,a)=universalcolordesign.CUD_V4.B1A
+        cr.set_source_rgba(r,g,b,a)
         cr.move_to(self.current_time,0)
         cr.line_to(self.current_time,y)
         cr.stroke()

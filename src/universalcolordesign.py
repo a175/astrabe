@@ -66,7 +66,7 @@ def get_rgba_with_fixed_alhpa(rgb,alpha):
     (src_rgb,out_a)=alpha_unblend_s(alpha,(1,1,1),1,rgb,blend_type=BlendType.OVER)
     return tuple([c for c in src_rgb]+[alpha])
 
-class CUD_V3():
+class CUD_V3:
     # CUD ver 3
     ALPHA=0.6
     # 赤
@@ -117,7 +117,7 @@ class CUD_V3():
     # 黒
     G4 = (0/255, 0/255, 0/255)
     
-class CUD_V4():
+class CUD_V4:
     A1=(255/255,75/255,0/255)
     A2=(255/255,241/255,0/255)
     A3=(3/255,175/255,122/255)
