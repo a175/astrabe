@@ -79,16 +79,18 @@ class TrackCursorArea(Gtk.DrawingArea):
 class RulerTrack(Gtk.DrawingArea):
     def __init__(self):
         super().__init__()
-        #self.set_size_request(-1,10)
-        self.set_size_request(10000,10)
+        self.set_size_request(-1,10)
         self.connect("draw", self.on_draw__area)
+
+    def set_duration(self,duration):
+        self.set_size_request(duration,10)
         
     def on_draw__area(self, widget, cr):
         allocation = widget.get_allocation()
         y=allocation.height
         (r,g,b)=universalcolordesign.CUD_V4.G3
         cr.set_source_rgba(r,g,b)
-        n=1000
+        n=allocation.width//5
         for i in range(n):
             cr.move_to(i*5,0)
             cr.line_to(i*5,y//4)
@@ -119,7 +121,8 @@ class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
         self.box.set_orientation(Gtk.Orientation.VERTICAL)
         overlay.add(self.box)
 
-        self.add_track(RulerTrack())
+        self.ruler=RulerTrack()
+        self.add_track(self.ruler)
         
         self.video_stuff=None
         self.init_timerid_and_interval(10)
@@ -159,6 +162,9 @@ class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
                 x=0
                 adj.set_value(x)
         self.current_time=cx
+        duration=self.video_stuff.query_duration(Gst.Format.TIME)
+        if duration > 0 :
+            self.ruler.set_duration(duration*self.unit)
         return True
 
 
