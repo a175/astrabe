@@ -79,10 +79,9 @@ class TrackCursorArea(Gtk.DrawingArea):
 class RulerTrack(Gtk.DrawingArea):
     def __init__(self):
         super().__init__()
-        self.set_size_request(-1,10)
+        #self.set_size_request(-1,10)
+        self.set_size_request(10000,10)
         self.connect("draw", self.on_draw__area)
-
-        self.n=0
         
     def on_draw__area(self, widget, cr):
         allocation = widget.get_allocation()
@@ -107,6 +106,9 @@ class RulerTrack(Gtk.DrawingArea):
 class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
     def __init__(self):
         super().__init__()
+        self.current_time=0
+        self.unit=10/Gst.SECOND
+        
         #scw.set_policy(Gtk.PolicyType.AUTOMATIC,Gtk.PolicyType.NEVER)
         self.set_policy(Gtk.PolicyType.ALWAYS,Gtk.PolicyType.NEVER)
         overlay=Gtk.Overlay()
@@ -127,6 +129,36 @@ class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
         if current < 0:
             return True
         self.cursorarea.set_current_time(current)
+        cx=current*self.unit
+        adj=self.get_hadjustment()
+        px=adj.get_value()
+        ps=adj.get_page_size()
+        x1=adj.get_upper()
+        if cx > self.current_time:
+            if cx < px:
+                x=cx
+                adj.set_value(x)
+            elif cx < px+ps/2:
+                pass
+            elif cx < x1-ps/2:
+                x=cx-ps/2
+                adj.set_value(x)
+            else:
+                x=x1-ps
+                adj.set_value(x)
+        elif cx > self.current_time:
+            if cx > px+ps:
+                x=cx-ps
+                adj.set_value(x)
+            elif cx > px+ps/2:
+                pass
+            elif cx > ps/2:
+                x=cx-ps/2
+                adj.set_value(x)
+            else:
+                x=0
+                adj.set_value(x)
+        self.current_time=cx
         return True
 
 
