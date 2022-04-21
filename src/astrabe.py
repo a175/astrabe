@@ -76,7 +76,8 @@ class RulerTrack(Gtk.DrawingArea):
     def on_draw__area(self, widget, cr):
         allocation = widget.get_allocation()
         y=allocation.height
-        cr.set_source_rgba(0, 1, 0, 0.5)
+        (r,g,b)=universalcolordesign.CUD_V4.A1
+        cr.set_source_rgba(r,g,b)
         n=1000
         for i in range(n):
             cr.move_to(i*5,0)
@@ -106,7 +107,7 @@ class TrackArea(Gtk.ScrolledWindow):
         overlay.add(self.box)
 
         self.add_track(RulerTrack())
-        self.add_track(RulerTrack())
+
 
 
     def add_track(self,area):
