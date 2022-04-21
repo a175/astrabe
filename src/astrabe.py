@@ -2,12 +2,13 @@
 import sys
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk,GdkPixbuf,Gio,GLib
+from gi.repository import Gtk,GdkPixbuf,Gio,GLib,Gdk
 gi.require_version("Gst", "1.0")
 gi.require_version("GstVideo", "1.0")
 from gi.repository import Gst,GstVideo
 
 import enum
+import cairo
 
 class RegularlyUpdatable:
     def init_timerid_and_interval(self,interval):
@@ -38,6 +39,77 @@ class RegularlyUpdatable:
 
     def regular_update_step(self):
         pass
+
+class TrackCursorArea(Gtk.DrawingArea):
+    def __init__(self):
+        super().__init__()
+        self.current_time=10
+        self.connect("draw", self.on_draw__area)
+        
+    def set_current_time(self,time):
+        self.current_time=time
+        self.queue_draw()
+    
+    def on_draw__area(self, widget, cr):
+        allocation = widget.get_allocation()
+        y=allocation.height
+        cr.set_source_rgba(1, 0, 0, 0.5)
+        cr.move_to(self.current_time,0)
+        cr.line_to(self.current_time,y)
+        cr.stroke()
+        return True
+
+class RulerTrack(Gtk.DrawingArea):
+    def __init__(self):
+        super().__init__()
+        self.set_size_request(-1,10)
+        self.connect("draw", self.on_draw__area)
+
+        
+    def set_current_time(self,time):
+        self.current_time=time
+        self.queue_draw()
+    
+    def on_draw__area(self, widget, cr):
+        allocation = widget.get_allocation()
+        y=allocation.height
+        cr.set_source_rgba(0, 1, 0, 0.5)
+        n=1000
+        for i in range(n):
+            cr.move_to(i*5,0)
+            cr.line_to(i*5,y//4)
+            cr.stroke()
+        for i in range(n//5):
+            cr.move_to(i*5*5,0)
+            cr.line_to(i*5*5,y//2)
+            cr.stroke()
+        for i in range(n//10):
+            cr.move_to(i*5*10,0)
+            cr.line_to(i*5*10,y)
+            cr.stroke()
+        return True
+
+class TrackArea(Gtk.ScrolledWindow):
+    def __init__(self):
+        super().__init__()
+        #scw.set_policy(Gtk.PolicyType.AUTOMATIC,Gtk.PolicyType.NEVER)
+        self.set_policy(Gtk.PolicyType.ALWAYS,Gtk.PolicyType.NEVER)
+        overlay=Gtk.Overlay()
+        self.add(overlay)
+        self.cursorarea=TrackCursorArea()
+        overlay.add_overlay(self.cursorarea)
+        self.box=Gtk.Box()
+        self.box.set_orientation(Gtk.Orientation.VERTICAL)
+        overlay.add(self.box)
+
+        self.add_track(RulerTrack())
+        self.add_track(RulerTrack())
+
+
+    def add_track(self,area):
+        #self.box.pack_start(area,True,True,2)
+        self.box.pack_start(area,False,True,2)
+
 
 class VideoPositionScale(Gtk.Scale,RegularlyUpdatable):
     def __init__(self):
@@ -501,6 +573,9 @@ class VideoDrawingArea(Gtk.DrawingArea):
         self.video_stuff=video_stuff
         pass
 
+
+
+
 class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -524,12 +599,15 @@ class MainWindow(Gtk.ApplicationWindow):
         
         self.video_stuff=GstVideoStuff()
         
+        
         video_drawing_area = VideoDrawingArea()
         video_drawing_area.set_video_stuff(self.video_stuff)
         video_block.pack_start(video_drawing_area,True,True,0)
         self.video_drawing_area=video_drawing_area
-        
 
+        track_area=TrackArea()
+        video_block.pack_start(track_area,False,True,0)
+        
         video_controller_box=Gtk.Box()
         video_controller_box.set_orientation(Gtk.Orientation.HORIZONTAL)
         video_block.pack_start(video_controller_box,False,False,0)
@@ -588,6 +666,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.maximize()
         else:
             self.unmaximize()
+
 
 class AstrabeApp(Gtk.Application):
     def __init__(self, *args, **kwargs):
