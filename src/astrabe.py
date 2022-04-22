@@ -80,6 +80,7 @@ class RulerTrack(Gtk.DrawingArea):
     def __init__(self):
         super().__init__()
         self.set_size_request(-1,10)
+        self.is_for_upper=False
         self.connect("draw", self.on_draw__area)
 
     def set_duration(self,duration):
@@ -91,19 +92,20 @@ class RulerTrack(Gtk.DrawingArea):
         (r,g,b)=universalcolordesign.CUD_V4.G3
         cr.set_source_rgba(r,g,b)
         n=allocation.width//5
-        for i in range(n):
-            cr.move_to(i*5,0)
-            cr.line_to(i*5,y//4)
-            cr.stroke()
-        for i in range(n//5):
-            cr.move_to(i*5*5,0)
-            cr.line_to(i*5*5,y//2)
-            cr.stroke()
-        for i in range(n//10):
-            cr.move_to(i*5*10,0)
-            cr.line_to(i*5*10,y)
-            cr.stroke()
+        for (ni,ri) in [(1,4),(5,2),(10,1)]:
+            yi=y//ri
+            if self.is_for_upper:
+                y0=0
+                y1=yi
+            else:
+                y0=y
+                y1=y-yi
+            for i in range(n//ni):
+                cr.move_to(i*5*ni,y0)
+                cr.line_to(i*5*ni,y1)
+                cr.stroke()        
         return True
+
 
 class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
     def __init__(self):
