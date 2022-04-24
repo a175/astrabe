@@ -148,6 +148,10 @@ class SegmentTrack(Gtk.DrawingArea):
             cr.move_to(s,z*10+5)
             cr.line_to(t,z*10+5)
             cr.stroke()
+            cr.arc(s,z*10+5,2,-3.14/2,3.14/2)
+            cr.fill()
+            cr.arc(t,z*10+5,2,3.14/2,3*3.14/2)
+            cr.fill()
         return True
 
 
@@ -170,12 +174,6 @@ class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
         self.ruler=RulerTrack()
         self.add_track(self.ruler)
 
-        st=SegmentTrack()
-        self.add_track(st)
-        st.append_segment(13,40,'x')
-        st.append_segment(10,50,'x')
-        st.append_segment(60,90,'x')
-        
         self.video_stuff=None
         self.init_timerid_and_interval(10)
 
