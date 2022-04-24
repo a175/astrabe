@@ -106,6 +106,50 @@ class RulerTrack(Gtk.DrawingArea):
                 cr.stroke()        
         return True
 
+class SegmentTrack(Gtk.DrawingArea):
+    def __init__(self):
+        super().__init__()
+        self.set_size_request(-1,10)
+        self.segment=[]
+        self.maxzindex=-1
+        self.maxterminal=-1
+        self.connect("draw", self.on_draw__area)
+
+    def append_segment(self,start,terminal,label):
+        zz=[z for (s,t,z,l) in self.segment if (s<=start and start<=t) or  (s<=terminal and terminal<=t) or (start<=s and s<=terminal) or (start<=t and t<=terminal) ]
+        for i in range(len(zz)+1):
+            if i not in zz:
+                zindex = i
+                break
+
+        self.segment.append((start,terminal,zindex,label))
+        if zindex > self.maxzindex:
+            self.maxzindex=zindex
+            self.set_size_request(self.maxterminal,10*(self.maxzindex+1))
+        if terminal > self.maxterminal:
+            self.maxterminal=terminal
+            self.set_size_request(self.maxterminal,10*(self.maxzindex+1))
+        
+    def on_draw__area(self, widget, cr):
+        allocation = widget.get_allocation()
+        y=allocation.height
+        (r,g,b,a)=universalcolordesign.CUD_V4.B1A
+        cr.set_source_rgba(r,g,b,a)
+        for (s,t,z,l) in self.segment:
+            cr.move_to(s,0)
+            cr.line_to(s,y)
+            cr.stroke()        
+            cr.move_to(t,0)
+            cr.line_to(t,y)
+            cr.stroke()
+        (r,g,b)=universalcolordesign.CUD_V4.A1
+        cr.set_source_rgb(r,g,b)
+        for (s,t,z,l) in self.segment:        
+            cr.move_to(s,z*10+5)
+            cr.line_to(t,z*10+5)
+            cr.stroke()
+        return True
+
 
 class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
     def __init__(self):
@@ -125,6 +169,12 @@ class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
 
         self.ruler=RulerTrack()
         self.add_track(self.ruler)
+
+        st=SegmentTrack()
+        self.add_track(st)
+        st.append_segment(13,40,'x')
+        st.append_segment(10,50,'x')
+        st.append_segment(60,90,'x')
         
         self.video_stuff=None
         self.init_timerid_and_interval(10)
