@@ -8,7 +8,7 @@ gi.require_version("GstVideo", "1.0")
 from gi.repository import Gst,GstVideo
 
 import enum
-import cairo
+import math
 
 import universalcolordesign
 
@@ -53,13 +53,19 @@ class RegularlyUpdatable:
     def regular_update_step(self):
         pass
 
+class TrackDrawingArea(Gtk.DrawingArea):
+    def __init__(self):
+        super().__init__()
+        self.time_per_unit = 0.1*Gst.SECOND
+        
+    def to_x(self,time):
+        return time/self.time_per_unit
 
-class TrackCursorArea(Gtk.DrawingArea):
+class CursorTrack(TrackDrawingArea):
     def __init__(self):
         super().__init__()
         self.current_time=0
         self.connect("draw", self.on_draw__area)
-        self.unit=10/Gst.SECOND
 
     def set_current_time(self,time):
         self.current_time=time
@@ -68,7 +74,7 @@ class TrackCursorArea(Gtk.DrawingArea):
     def on_draw__area(self, widget, cr):
         allocation = widget.get_allocation()
         y=allocation.height
-        x=self.unit*self.current_time
+        x=self.to_x(self.current_time)
         (r,g,b,a)=universalcolordesign.CUD_V4.B1A
         cr.set_source_rgba(r,g,b,a)
         cr.move_to(x,0)
@@ -76,7 +82,7 @@ class TrackCursorArea(Gtk.DrawingArea):
         cr.stroke()
         return True
 
-class RulerTrack(Gtk.DrawingArea):
+class RulerTrack(TrackDrawingArea):
     def __init__(self):
         super().__init__()
         self.set_size_request(-1,10)
@@ -84,7 +90,7 @@ class RulerTrack(Gtk.DrawingArea):
         self.connect("draw", self.on_draw__area)
 
     def set_duration(self,duration):
-        self.set_size_request(duration,10)
+        self.set_size_request(self.to_x(duration),10)
         
     def on_draw__area(self, widget, cr):
         allocation = widget.get_allocation()
@@ -106,7 +112,7 @@ class RulerTrack(Gtk.DrawingArea):
                 cr.stroke()        
         return True
 
-class SegmentTrack(Gtk.DrawingArea):
+class SegmentTrack(TrackDrawingArea):
     def __init__(self):
         super().__init__()
         self.set_size_request(-1,10)
@@ -136,21 +142,25 @@ class SegmentTrack(Gtk.DrawingArea):
         (r,g,b,a)=universalcolordesign.CUD_V4.B1A
         cr.set_source_rgba(r,g,b,a)
         for (s,t,z,l) in self.segment:
-            cr.move_to(s,0)
-            cr.line_to(s,y)
+            x0=self.to_x(s)
+            x1=self.to_x(t)
+            cr.move_to(x0,0)
+            cr.line_to(x0,y)
             cr.stroke()        
-            cr.move_to(t,0)
-            cr.line_to(t,y)
+            cr.move_to(x1,0)
+            cr.line_to(x1,y)
             cr.stroke()
         (r,g,b)=universalcolordesign.CUD_V4.A1
         cr.set_source_rgb(r,g,b)
         for (s,t,z,l) in self.segment:        
-            cr.move_to(s,z*10+5)
-            cr.line_to(t,z*10+5)
+            x0=self.to_x(s)
+            x1=self.to_x(t)
+            cr.move_to(x0,z*10+5)
+            cr.line_to(x1,z*10+5)
             cr.stroke()
-            cr.arc(s,z*10+5,2,-3.14/2,3.14/2)
+            cr.arc(x0,z*10+5,2,-math.pi/2,math.pi/2)
             cr.fill()
-            cr.arc(t,z*10+5,2,3.14/2,3*3.14/2)
+            cr.arc(x1,z*10+5,2,math.pi/2,3*math.pi/2)
             cr.fill()
         return True
 
@@ -159,13 +169,11 @@ class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
     def __init__(self):
         super().__init__()
         self.current_time=0
-        self.unit=10/Gst.SECOND
-        
         #scw.set_policy(Gtk.PolicyType.AUTOMATIC,Gtk.PolicyType.NEVER)
         self.set_policy(Gtk.PolicyType.ALWAYS,Gtk.PolicyType.NEVER)
         overlay=Gtk.Overlay()
         self.add(overlay)
-        self.cursorarea=TrackCursorArea()
+        self.cursorarea=CursorTrack()
         overlay.add_overlay(self.cursorarea)
         self.box=Gtk.Box()
         self.box.set_orientation(Gtk.Orientation.VERTICAL)
@@ -182,7 +190,7 @@ class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
         if current < 0:
             return True
         self.cursorarea.set_current_time(current)
-        cx=current*self.unit
+        cx=self.cursorarea.to_x(current)
         adj=self.get_hadjustment()
         px=adj.get_value()
         ps=adj.get_page_size()
@@ -214,7 +222,7 @@ class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
         self.current_time=cx
         duration=self.video_stuff.query_duration(Gst.Format.TIME)
         if duration > 0 :
-            self.ruler.set_duration(duration*self.unit)
+            self.ruler.set_duration(duration)
         return True
 
 
