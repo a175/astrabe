@@ -131,10 +131,11 @@ class SegmentTrack(TrackDrawingArea):
         self.segment.append((start,terminal,zindex,label))
         if zindex > self.maxzindex:
             self.maxzindex=zindex
-            self.set_size_request(self.maxterminal,10*(self.maxzindex+1))
+            self.set_size_request(self.to_x(self.maxterminal),10*(self.maxzindex+1))
         if terminal > self.maxterminal:
             self.maxterminal=terminal
-            self.set_size_request(self.maxterminal,10*(self.maxzindex+1))
+            self.set_size_request(self.to_x(self.maxterminal),10*(self.maxzindex+1))
+
         
     def on_draw__area(self, widget, cr):
         allocation = widget.get_allocation()
@@ -695,6 +696,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.add_action(maximize_action)
         self.connect("notify::is-maximized",lambda obj, pspec: maximize_action.set_state(GLib.Variant.new_boolean(obj.props.is_maximized)),)
 
+        action = Gio.SimpleAction.new("import_segment_track", None)
+        action.connect("activate", self.on_import_segment_track)
+        self.add_action(action)
+        
         self.build_ui()
         self.set_default_size(640, 480)
 
@@ -718,6 +723,7 @@ class MainWindow(Gtk.ApplicationWindow):
         track_area=TrackArea()
         video_block.pack_start(track_area,False,True,0)
         track_area.set_video_stuff(self.video_stuff)
+        self.track_area=track_area
         
         video_controller_box=Gtk.Box()
         video_controller_box.set_orientation(Gtk.Orientation.HORIZONTAL)
@@ -778,6 +784,28 @@ class MainWindow(Gtk.ApplicationWindow):
         else:
             self.unmaximize()
 
+    def on_import_segment_track(self, action, value):
+        pass
+
+    def import_segment_track_from_csv(self,filename):
+        skip=1
+        segment_track=SegmentTrack()
+        with open(filename) as file:
+            for fi in file:
+                if skip >0 :
+                    skip=skip-1
+                    continue
+                data=fi.strip().split(",")
+                
+                dd = [float(i) for i in data[1].split(":")]
+                s=(dd[0]*60+dd[1])*60+dd[2]
+                dd = [float(i) for i in data[2].split(":")]
+                d=(dd[0]*60+dd[1])*60+dd[2]
+                t=s+d
+                segment_track.append_segment(s*Gst.SECOND,t*Gst.SECOND,"?")
+        segment_track.show()
+        self.track_area.add_track(segment_track)
+                
 
 class AstrabeApp(Gtk.Application):
     def __init__(self, *args, **kwargs):
@@ -802,15 +830,20 @@ class AstrabeApp(Gtk.Application):
         window.present()
 
     def do_open(self,files,n_files,hint):
-        for gfile in files:
-            print(gfile.get_path())
-            print(gfile.get_uri())
-            uri=gfile.get_uri()
         window=MainWindow(application=self)
+        
+        print(files[0].get_path())
+        print(files[0].get_uri())
+        uri=files[0].get_uri()        
         window.set_video(uri)
         window.show_all()
         window.present()
 
+        for gfile in files[1:]:
+            path=gfile.get_path()
+            print(path)
+            window.import_segment_track_from_csv(path)
+        
         print(hint)
 
     def do_command_line(self,command_line):
