@@ -390,7 +390,8 @@ class VideoController(VideoControllerBox):
     def build_ui(self):
         eh={}
         eh={"clicked":self.on_click_start}
-        self.add_button_with_icon("gtk-media-play",Gtk.IconSize.MENU,eh)
+        #self.add_button_with_icon("gtk-media-play",Gtk.IconSize.MENU,eh)
+        self.add_button_with_icon("media-playback-start",Gtk.IconSize.MENU,eh)
         eh={"clicked":self.on_click_pause}
         self.add_button_with_icon("gtk-media-pause",Gtk.IconSize.MENU,eh)
         eh={"clicked":self.on_click_stop}
@@ -791,8 +792,7 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_import_segment_track(self, action, value):
         pass
 
-    def import_segment_track_from_csv(self,filename):
-        skip=1
+    def import_segment_track_from_csv(self,filename,start_col,duration_col,skip):
         segment_track=SegmentTrack()
         with open(filename) as file:
             for fi in file:
@@ -800,17 +800,18 @@ class MainWindow(Gtk.ApplicationWindow):
                     skip=skip-1
                     continue
                 data=fi.strip().split(",")
-                
-                dd = [float(i) for i in data[1].split(":")]
-                s=(dd[0]*60+dd[1])*60+dd[2]
-                dd = [float(i) for i in data[2].split(":")]
-                d=(dd[0]*60+dd[1])*60+dd[2]
+                s=self.str2nanosec_hhmmss(data[start_col])
+                d=self.str2nanosec_hhmmss(data[duration_col])
                 t=s+d
-                segment_track.append_segment(s*Gst.SECOND,t*Gst.SECOND,"?")
+                segment_track.append_segment(s,t,data)
         segment_track.show()
         self.track_area.add_track(segment_track)
-                
 
+    def str2nanosec_hhmmss(self,data_str):
+        dd = [float(i) for i in data_str.split(":")]
+        s=(dd[0]*60+dd[1])*60+dd[2]
+        return s*Gst.SECOND
+    
 class AstrabeApp(Gtk.Application):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -846,7 +847,7 @@ class AstrabeApp(Gtk.Application):
         for gfile in files[1:]:
             path=gfile.get_path()
             print(path)
-            window.import_segment_track_from_csv(path)
+            window.import_segment_track_from_csv(path,1,2,1)
         
         print(hint)
 
