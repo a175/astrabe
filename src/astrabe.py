@@ -272,21 +272,21 @@ class VideoControllerBox(Gtk.Box):
     def build_ui(self):
         pass
 
-    def add_button_with_icon(self,iconname,iconsize,event_handlers={}):
-        #it=Gtk.IconTheme.get_default()
-        #it.has_icon(iconname)
+    def add_button(self,iconnames,label,iconsize,event_handlers={}):
+        it=Gtk.IconTheme.get_default()
         #it.list_contexts()
         #it.list_icons(context)
-        button=Gtk.Button.new_from_icon_name(iconname,iconsize)
+        button = None
+        for iconname in iconnames:
+            if it.has_icon(iconname):
+                button=Gtk.Button.new_from_icon_name(iconname,iconsize)
+                break
+        if button == None:
+            button = Gtk.Button.new_with_label(label)
         for k in event_handlers.keys():
             button.connect(k,event_handlers[k])            
         self.pack_start(button,False,False,0)
 
-    def add_button_with_label(self,label,event_handlers={}):
-        button = Gtk.Button.new_with_label(label)
-        for k in event_handlers.keys():
-            button.connect(k,event_handlers[k])            
-        self.pack_start(button,False,False,0)
 
     def set_video_stuff(self,video_stuff):
         self.video_stuff=video_stuff
@@ -297,9 +297,9 @@ class VideoFrameStepController(VideoControllerBox):
 
     def build_ui(self):
         eh={"clicked":self.on_click_previous_frame}
-        self.add_button_with_label("-1/fps",eh)
+        self.add_button([],"-1/fps",eh)
         eh={"clicked":self.on_click_next_frame}
-        self.add_button_with_label("+1/fps",eh)
+        self.add_button([],"+1/fps",eh)
 
     def on_click_next_frame(self,button):
         self.video_stuff.frame_step(1)
@@ -315,9 +315,11 @@ class VideoFFController(VideoControllerBox):
         
     def build_ui(self):
         eh={"clicked":self.on_click_rew}
-        self.add_button_with_icon("gtk-media-forward-rtl",Gtk.IconSize.MENU,eh)
+        il=["gtk-media-forward-rtl"]
+        self.add_button(il,"FF",Gtk.IconSize.MENU,eh)
         eh={"clicked":self.on_click_ff}
-        self.add_button_with_icon("gtk-media-forward-ltr",Gtk.IconSize.MENU,eh)
+        il=["gtk-media-forward-ltr"]
+        self.add_button(il,"RW",Gtk.IconSize.MENU,eh)
 
         spinbutton = Gtk.SpinButton.new_with_range(0.1,10,0.01)
         adjustment = Gtk.Adjustment()
@@ -353,9 +355,11 @@ class VideoSkipController(VideoControllerBox):
         
     def build_ui(self):
         eh={"clicked":self.on_click_rew}
-        self.add_button_with_icon("gtk-media-next-rtl",Gtk.IconSize.MENU,eh)
+        il=["gtk-media-next-rtl"]
+        self.add_button(il,"Next",Gtk.IconSize.MENU,eh)
         eh={"clicked":self.on_click_ff}
-        self.add_button_with_icon("gtk-media-next-ltr",Gtk.IconSize.MENU,eh)
+        il=["gtk-media-next-ltr"]
+        self.add_button(il,"Prev",Gtk.IconSize.MENU,eh)
 
         spinbutton = Gtk.SpinButton.new_with_range(0.1,10,0.01)
         adjustment = Gtk.Adjustment()
@@ -388,14 +392,18 @@ class VideoController(VideoControllerBox):
         super().__init__()
         
     def build_ui(self):
-        eh={}
         eh={"clicked":self.on_click_start}
-        #self.add_button_with_icon("gtk-media-play",Gtk.IconSize.MENU,eh)
-        self.add_button_with_icon("media-playback-start",Gtk.IconSize.MENU,eh)
+        il=["gtk-media-play","media-playback-start"]
+        lb="Play"
+        self.add_button(il,lb,Gtk.IconSize.MENU,eh)
         eh={"clicked":self.on_click_pause}
-        self.add_button_with_icon("gtk-media-pause",Gtk.IconSize.MENU,eh)
+        il=["gtk-media-pause"]
+        lb="Pause"
+        self.add_button(il,lb,Gtk.IconSize.MENU,eh)
         eh={"clicked":self.on_click_stop}
-        self.add_button_with_icon("gtk-media-stop",Gtk.IconSize.MENU,eh)
+        il=["gtk-media-stop"]
+        lb="Stop"
+        self.add_button(il,lb,Gtk.IconSize.MENU,eh)
         
 
     def on_click_start(self,button):
