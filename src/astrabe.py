@@ -273,6 +273,10 @@ class VideoControllerBox(Gtk.Box):
         pass
 
     def add_button_with_icon(self,iconname,iconsize,event_handlers={}):
+        #it=Gtk.IconTheme.get_default()
+        #it.has_icon(iconname)
+        #it.list_contexts()
+        #it.list_icons(context)
         button=Gtk.Button.new_from_icon_name(iconname,iconsize)
         for k in event_handlers.keys():
             button.connect(k,event_handlers[k])            
