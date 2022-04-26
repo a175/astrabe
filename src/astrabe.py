@@ -798,7 +798,30 @@ class MainWindow(Gtk.ApplicationWindow):
             self.unmaximize()
 
     def on_import_segment_track(self, action, value):
-        pass
+        dialog = Gtk.FileChooserDialog(action=Gtk.FileChooserAction.OPEN)
+        dialog.add_buttons(Gtk.STOCK_CANCEL,Gtk.ResponseType.CANCEL,Gtk.STOCK_OPEN,Gtk.ResponseType.OK)
+
+        filter = Gtk.FileFilter()
+        filter.set_name("CSV files")
+        filter.add_pattern("*.csv")
+        filter.add_mime_type("text/csv")
+        dialog.add_filter(filter)
+
+        filter = Gtk.FileFilter()
+        filter.set_name("All files")
+        filter.add_pattern("*")
+        dialog.add_filter(filter)
+
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            file=dialog.get_file()
+            path=file.get_path()
+            dialog.destroy()        
+            self.import_segment_track_from_csv(path,1,2,1)
+        elif response == Gtk.ResponseType.CANCEL:
+            dialog.destroy()
+
+
 
     def import_segment_track_from_csv(self,filename,start_col,duration_col,skip):
         segment_track=SegmentTrack()
