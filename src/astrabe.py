@@ -293,7 +293,7 @@ class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
             else:
                 x=x1-ps
                 adj.set_value(x)
-        elif cx > self.current_time:
+        elif cx < self.current_time:
             if cx > px+ps:
                 x=cx-ps
                 adj.set_value(x)
