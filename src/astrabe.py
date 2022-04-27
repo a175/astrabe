@@ -166,6 +166,91 @@ class SegmentTrack(TrackDrawingArea):
         return True
 
 
+class LinechartTrack(TrackDrawingArea):
+    def __init__(self):
+        super().__init__()
+        self.set_size_request(-1,110)
+        self.series_of_data = {}
+        self.min_max = []
+        self.maxtime=-1
+        self.connect("draw", self.on_draw__area)
+        self.colors = {}
+        self.color_pallet = [universalcolordesign.CUD_V4.A1,
+                             universalcolordesign.CUD_V4.A2,
+                             universalcolordesign.CUD_V4.A4,
+                             universalcolordesign.CUD_V4.A5,
+                             universalcolordesign.CUD_V4.A3,
+                             universalcolordesign.CUD_V4.A7,
+                             universalcolordesign.CUD_V4.A8,
+                             universalcolordesign.CUD_V4.A9,
+                             universalcolordesign.CUD_V4.A6]
+
+    def append_data(self,time,s,data):
+        if s not in self.series_of_data:
+            self.series_of_data[s]=[]
+        self.series_of_data[s].append((time,data))
+        self.series_of_data[s].sort()
+
+        if s not in self.colors:
+            self.colors[s]=self.color_pallet[(len(self.series_of_data)-1)]
+
+        if time > self.maxtime:
+            self.maxtime=time
+            self.set_size_request(self.to_x(self.maxtime),110)
+
+        flag=True
+        n=len(self.min_max)
+        if n>0:
+            if self.min_max[-1][0]>=time:
+                for j in range(n):
+                    i=n-j-1
+                    if self.min_max[i][0]==time:
+                        if self.min_max[i][2]>data:
+                            self.min_max[i][1]=s
+                            self.min_max[i][2]=data
+                        if self.min_max[i][4]<data:
+                            self.min_max[i][3]=s
+                            self.min_max[i][4]=data
+                        flag=False
+        if flag:
+            self.min_max.append([time,s,data,s,data])
+            self.min_max.sort()
+        
+
+    def to_y(self,v):
+        return 105-v*100
+    
+    def on_draw__area(self, widget, cr):
+        allocation = widget.get_allocation()
+        y=allocation.height
+
+        n=len(self.series_of_data)
+        for k in self.series_of_data.keys():
+            (r,g,b)=self.colors[k]
+            cr.set_source_rgb(r,g,b)
+            cr.move_to(self.to_x(0),self.to_y(0))
+            for (time,v) in self.series_of_data[k]:
+                x0=self.to_x(time)
+                y0=self.to_y(v)
+                cr.line_to(x0,y0)
+            cr.stroke()
+
+        for (min_max_0,min_max_1) in zip(self.min_max,self.min_max[1:]):
+            x0=self.to_x(min_max_0[0])
+            x1=self.to_x(min_max_1[0])
+            (r,g,b)=self.colors[min_max_0[1]]
+            cr.set_source_rgb(r,g,b)
+            cr.move_to(x0,self.to_y(0))
+            cr.line_to(x1,self.to_y(0))
+            cr.stroke()
+            (r,g,b)=self.colors[min_max_0[3]]
+            cr.set_source_rgb(r,g,b)
+            cr.move_to(x0,self.to_y(1))
+            cr.line_to(x1,self.to_y(1))
+            cr.stroke()
+        return True
+
+
 class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
     def __init__(self):
         super().__init__()
@@ -842,7 +927,21 @@ class MainWindow(Gtk.ApplicationWindow):
         dd = [float(i) for i in data_str.split(":")]
         s=(dd[0]*60+dd[1])*60+dd[2]
         return s*Gst.SECOND
-    
+
+    def import_linechart_track_from_tsv(self,filename,skip):
+        track=LinechartTrack()
+        with open(filename) as file:
+            for fi in file:
+                if skip >0 :
+                    skip=skip-1
+                    continue
+                data=[ float(s) for s in fi.strip().split("\t")]
+                time=data[0]*Gst.SECOND
+                for (s,data) in enumerate(data[1:]):
+                    track.append_data(time,s,data)
+        track.show()
+        self.track_area.add_track(track)
+
 class AstrabeApp(Gtk.Application):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -878,8 +977,11 @@ class AstrabeApp(Gtk.Application):
         for gfile in files[1:]:
             path=gfile.get_path()
             print(path)
-            window.import_segment_track_from_csv(path,1,2,1)
-        
+            if path.endswith("csv"):
+                window.import_segment_track_from_csv(path,1,2,1)
+            if path.endswith("txt"):
+                window.import_linechart_track_from_tsv(path,0)
+            
         print(hint)
 
     def do_command_line(self,command_line):
