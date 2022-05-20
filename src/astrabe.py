@@ -60,12 +60,39 @@ class TrackDrawingArea(Gtk.DrawingArea):
         
     def to_x(self,time):
         return time/self.time_per_unit
+    def to_time(self,x):
+        return x*self.time_per_unit
 
 class CursorTrack(TrackDrawingArea):
     def __init__(self):
         super().__init__()
         self.current_time=0
+        self.marked_time=0
+        
         self.connect("draw", self.on_draw__area)
+
+        self.clicked_position=None
+        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        self.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
+        self.connect("button-press-event",self.on_click__area)           
+        self.connect("button-release-event",self.on_release__area)            
+
+
+        
+    def on_click__area(self,widget,eventbutton):
+        self.clicked_position=(eventbutton.x,eventbutton.y)
+
+    def on_release__area(self,widget,eventbutton):
+        if (eventbutton.x,eventbutton.y)==self.clicked_position:
+            self.set_marked_time(self.to_time(eventbutton.x))
+            print("clicked")
+        else:
+            print("draged")
+        self.clicked_position=None
+
+    def set_marked_time(self,time):
+        self.marked_time=time
+        self.queue_draw()
 
     def set_current_time(self,time):
         self.current_time=time
@@ -80,6 +107,14 @@ class CursorTrack(TrackDrawingArea):
         cr.move_to(x,0)
         cr.line_to(x,y)
         cr.stroke()
+
+        x=self.to_x(self.marked_time)
+        (r,g,b,a)=universalcolordesign.CUD_V4.B4A
+        cr.set_source_rgba(r,g,b,a)
+        cr.move_to(x,0)
+        cr.line_to(x,y)
+        cr.stroke()
+        
         return True
 
 class RulerTrack(TrackDrawingArea):
