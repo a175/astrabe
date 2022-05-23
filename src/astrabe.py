@@ -94,9 +94,15 @@ class CursorTrack(TrackDrawingArea):
         self.marked_time=time
         self.queue_draw()
 
+    def get_marked_time(self):
+        return self.marked_time
+
     def set_current_time(self,time):
         self.current_time=time
         self.queue_draw()
+        
+    def get_current_time(self):
+        return self.current_time
     
     def on_draw__area(self, widget, cr):
         allocation = widget.get_allocation()
@@ -123,7 +129,7 @@ class RulerTrack(TrackDrawingArea):
         self.set_size_request(-1,10)
         self.is_for_upper=False
         self.connect("draw", self.on_draw__area)
-
+        
     def set_duration(self,duration):
         self.set_size_request(self.to_x(duration),10)
         
@@ -305,7 +311,16 @@ class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
 
         self.video_stuff=None
         self.init_timerid_and_interval(10)
-
+        
+    def get_marked_time(self):
+        return self.cursorarea.get_marked_time()
+    
+    def set_marked_time(self,t):
+        return self.cursorarea.set_marked_time(t)
+    
+    def get_current_time(self):
+        return self.cursorarea.get_current_time()
+    
     def regular_update_step(self):
         current=self.video_stuff.query_position(Gst.Format.TIME)
         if current < 0:
@@ -833,8 +848,17 @@ class MainWindow(Gtk.ApplicationWindow):
         action.connect("activate", self.on_import_segment_track)
         self.add_action(action)
         
+        action = Gio.SimpleAction.new("move_current_position_to_marked_position", None)
+        action.connect("activate", self.on_move_current_position_to_marked_position)
+        self.add_action(action)
+
+        action = Gio.SimpleAction.new("move_marked_position_to_current_position", None)
+        action.connect("activate", self.on_move_marked_position_to_current_position)
+        self.add_action(action)
+
         self.build_ui()
         self.set_default_size(640, 480)
+
 
     def set_video(self,uri):
         self.video_stuff.set_file(uri)
@@ -916,7 +940,14 @@ class MainWindow(Gtk.ApplicationWindow):
             self.maximize()
         else:
             self.unmaximize()
-
+    def on_move_marked_position_to_current_position(self, action, value):
+        t=self.track_area.get_current_time()
+        self.track_area.set_marked_time(t)
+        
+    def on_move_current_position_to_marked_position(self, action, value):
+        t=self.track_area.get_marked_time()
+        self.video_stuff.seek_simple(t)
+        
     def on_import_segment_track(self, action, value):
         dialog = Gtk.FileChooserDialog(action=Gtk.FileChooserAction.OPEN)
         dialog.add_buttons(Gtk.STOCK_CANCEL,Gtk.ResponseType.CANCEL,Gtk.STOCK_OPEN,Gtk.ResponseType.OK)
