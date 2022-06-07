@@ -78,7 +78,6 @@ class CursorTrack(TrackDrawingArea):
         self.connect("button-press-event",self.on_click__area)           
         self.connect("button-release-event",self.on_release__area)            
 
-
         
     def on_click__area(self,widget,eventbutton):
         self.clicked_position=(eventbutton.x,eventbutton.y)
@@ -109,15 +108,19 @@ class CursorTrack(TrackDrawingArea):
         allocation = widget.get_allocation()
         y=allocation.height
         x=self.to_x(self.current_time)
-        (r,g,b,a)=universalcolordesign.CUD_V4.B1A
-        cr.set_source_rgba(r,g,b,a)
+        #(r,g,b,a)=universalcolordesign.CUD_V4.B1A
+        #cr.set_source_rgba(r,g,b,a)
+        (r,g,b)=universalcolordesign.CUD_V4.A1
+        cr.set_source_rgb(r,g,b)
         cr.move_to(x,0)
         cr.line_to(x,y)
         cr.stroke()
 
         x=self.to_x(self.marked_time)
-        (r,g,b,a)=universalcolordesign.CUD_V4.B4A
-        cr.set_source_rgba(r,g,b,a)
+        #(r,g,b,a)=universalcolordesign.CUD_V4.B4A
+        #cr.set_source_rgba(r,g,b,a)
+        (r,g,b)=universalcolordesign.CUD_V4.A4
+        cr.set_source_rgb(r,g,b)
         cr.move_to(x,0)
         cr.line_to(x,y)
         cr.stroke()
@@ -302,10 +305,13 @@ class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
         overlay=Gtk.Overlay()
         self.add(overlay)
         self.cursorarea=CursorTrack()
-        overlay.add_overlay(self.cursorarea)
         self.box=Gtk.Box()
         self.box.set_orientation(Gtk.Orientation.VERTICAL)
+        overlay.add_overlay(self.cursorarea)
         overlay.add(self.box)
+        #overlay.add(self.cursorarea)
+        #overlay.add_overlay(self.box)
+        #overlay.set_measure_overlay(self.box,True)
 
         self.ruler=RulerTrack()
         self.add_track(self.ruler)
@@ -364,6 +370,7 @@ class TrackArea(Gtk.ScrolledWindow,RegularlyUpdatable):
 
 
     def add_track(self,area):
+        
         #self.box.pack_start(area,True,True,2)
         self.box.pack_start(area,False,True,2)
 
